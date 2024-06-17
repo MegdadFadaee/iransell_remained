@@ -1,5 +1,13 @@
-import json
-from tkinter import messagebox
+import sys, json
+from tkinter.messagebox import showerror
+
+
+def error(title, text=None) -> None:
+    if text is None:
+        text = title
+
+    showerror(title, text)
+    sys.exit()
 
 
 class Url:
@@ -17,19 +25,32 @@ class Url:
         return Url.BASE + Url.ACCOUNT
 
 
-try:
-    config: str = open('config.json').read()
-    config: dict = json.loads(config)
-    token = config['token']
-    interval = int(config['interval']) or 10000
-except FileNotFoundError:
-    messagebox.showerror('Config Not Found!', 'Config file Not Found!')
-    exit(0)
-except KeyError:
-    messagebox.showerror('Token Not Found!', 'Token Not Found!')
-    exit(0)
+class Config:
+    def __init__(self) -> None:
+        try:
+            with open('config.json') as file:
+                config_file: str = file.read()
+                configs: dict = json.loads(config_file)
+                self.access_token = configs['access_token']
+                self.payload = configs['payload']
+                self.interval = int(configs['interval']) or 10000
+        except FileNotFoundError:
+            error('Configs Not Found!', 'Config file Not Found!')
+        except KeyError:
+            error('Invalid Configs!', 'Required Configs Not Found!')
 
-headers = {
-    'Accept-Language': 'fa',
-    'Authorization': token,
-}
+    def to_dict(self) -> dict:
+        return {
+            'interval': self.interval,
+            'access_token': self.access_token,
+            'payload': self.payload,
+        }
+
+    def save(self) -> None:
+        with open('config.json', '+w') as file:
+            file.write(json.dumps(self.to_dict()))
+
+
+if __name__ == '__main__':
+    config = Config()
+    print(config.to_dict())

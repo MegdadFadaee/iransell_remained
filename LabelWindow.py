@@ -45,7 +45,7 @@ class LabelWindow(tk.Tk):
         self.label.bind('<Leave>', self.on_leave)
 
         # Schedule the text change
-        self.text_schedule()
+        self.schedule()
 
     def start_drag(self, event):
         self._drag_data = {'x': event.x, 'y': event.y}
@@ -80,8 +80,12 @@ class LabelWindow(tk.Tk):
             self.label.config(text=text)  # Change label text
         return self.label.cget('text')
 
+    def schedule(self):
+        self.text_schedule()  # add Schedule
+        self.after(self.interval, self.schedule)  # Schedule the next text change
+
     def text_schedule(self):
-        self.after(self.interval, self.text_schedule)  # Schedule the next text change
+        pass
 
 
 if __name__ == "__main__":

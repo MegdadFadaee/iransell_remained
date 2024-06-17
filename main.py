@@ -1,35 +1,54 @@
-from tkinter import messagebox
-from requests import get, Response
 from LabelWindow import LabelWindow
-from config import Url, headers, interval
+from requests import request, Response
+from config import Url, Config, error
+
+config = Config()
+headers = {
+    'Accept-Language': 'fa',
+    'Authorization': config.access_token,
+}
 
 
 class Window(LabelWindow):
     def text_schedule(self):
-        response = load_remained()
-        remained = find_remained_data(response)
+        try:
+            remained = get_remained_data()
+        except KeyError:
+            refresh_tokens()
+            remained = get_remained_data()
+
         self.text(remained)
 
-        super().text_schedule()
+
+def load_token() -> Response:
+    return request('POST', Url.post_token(), headers=headers, json=config.payload)
 
 
 def load_remained() -> Response:
-    return get(Url.get_account(), headers=headers)
+    return request('GET', Url.get_account(), headers=headers)
 
 
-def find_remained_data(response: Response) -> int:
-    json: dict = response.json()
+def refresh_tokens() -> None:
+    json: dict = load_token().json()
     try:
-        remained: list = json['cumulative_amounts']
-        data: dict = next(d for d in remained if d['type'] == 'data')
-        return int(data['remained'])
+        access_token: str = json['access_token']
+        refresh_token: str = json['refresh_token']
+
+        config.access_token = access_token
+        config.payload['refresh_token'] = refresh_token
+        config.save()
     except KeyError:
-        print(response.text)
-        messagebox.showerror('Invalid Token!', json['detail'])
-        exit(0)
+        error('Token Refresh!', 'We could not refresh your token,\nmaybe because of wrong configs.')
+
+
+def get_remained_data() -> int:
+    json: dict = load_remained().json()
+    remained: list = json['cumulative_amounts']
+    data: dict = next(d for d in remained if d['type'] == 'data')
+    return int(data['remained'])
 
 
 if __name__ == '__main__':
     app = Window()
-    app.interval = interval
+    app.interval = config.interval
     app.mainloop()
