@@ -44,11 +44,10 @@ def refresh_tokens() -> None:
 def get_remained_data() -> int:
     json: dict = load_remained().json()
     remained: list = json.get('cumulative_amounts', [])
-    try:
-        data: dict = next(d for d in remained if d['type'] == 'data')
-        return int(data.get('remained'))
-    except StopIteration:
-        return 0
+    for data in remained:
+        if data.get('type') == 'data':
+            return int(data.get('remained'))
+    return 0
 
 
 if __name__ == '__main__':
